@@ -3,6 +3,16 @@
     <div v-show="visible" id="stage">
       <div id="top-action-bar">
         <div id="top-right-action-bar">
+          <el-popover
+            placement="bottom"
+            width="400"
+            trigger="click">
+            <el-table :data="topRightTips">
+              <el-table-column property="name" align="left" width="100px" label="Name"></el-table-column>
+              <el-table-column property="key" align="center" min-width="60px" label="Key"></el-table-column>
+            </el-table>
+            <span class="el-icon-s-opportunity top-right-box" slot="reference" />
+          </el-popover>
           <i v-if="lastText===text" class="el-icon-success top-right-box" />
           <i v-if="lastText!==text" class="el-icon-warning top-right-box" />
           <el-input v-model="title" type="text" size="mini" show-word-limit class="top-right-box" placeholder="Enter a title" />
@@ -93,7 +103,21 @@ export default {
       x: 0,
       y: 0,
       temp: [], // for step cancel
-      curVersionIndex: 0
+      curVersionIndex: 0,
+      topRightTips: [
+        {
+          name: 'Save',
+          key: 'Command + S or Ctrl + S'
+        },
+        {
+          name: 'Cancel',
+          key: 'Command + Z or Ctrl + Z'
+        },
+        {
+          name: 'Indent',
+          key: 'Tab(two spaces)'
+        }
+      ]
     }
   },
   computed: {
@@ -466,5 +490,8 @@ textarea {
 }
 .top-right-box{
   margin-right: 14px;
+}
+.top-right-tips{
+  background-color: #333
 }
 </style>
