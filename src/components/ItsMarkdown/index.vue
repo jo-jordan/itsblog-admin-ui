@@ -22,6 +22,8 @@
           @keydown.shift.tab.exact.prevent="handleShiftTabKeyDown"
           @keydown.meta.83.prevent="handleSave"
           @keydown.ctrl.83.prevent="handleSave"
+          @keydown.meta.90.prevent="handlePreCancel"
+          @keydown.ctrl.90.prevent="handlePreCancel"
         />
         <div id="content-preview" v-html="markedText" />
       </div>
@@ -77,6 +79,7 @@ export default {
   },
   data() {
     return {
+      isCancel: false,
       col: 0,
       row: 0,
       form: {},
@@ -88,7 +91,9 @@ export default {
       lines: 0,
       words: 0,
       x: 0,
-      y: 0
+      y: 0,
+      temp: [], // for step cancel
+      curVersionIndex: 0
     }
   },
   computed: {
@@ -103,6 +108,7 @@ export default {
   },
   watch: {
     content(val) {
+      this.resetEditor()
       this.id = val.id
       this.title = val.title
       this.text = val.text
@@ -114,6 +120,7 @@ export default {
     },
     text(val) {
       this.statistics(val)
+      this.record(val)
     },
     visible(val) {
       if (val) {
@@ -128,18 +135,39 @@ export default {
     }
   },
   created() {
+    this.resetEditor()
     this.lastText = this.text
     this.statistics(this.text)
     this.assignXAndY()
   },
   methods: {
-    handleTabKeyDown(e) {
+    resetEditor() {
+      this.temp = []
+      this.curVersionIndex = 0
+      this.text = ''
+      this.x = 0
+      this.y = 0
+      this.lastText = ''
+      this.title = ''
+      this.id = 0
+    },
+    handleShiftTabKeyDown(e) {
       const cursor = this.getCursorSelectedText()
       const start = cursor.start
       const end = cursor.end
 
       let a = this.text
       const selectedLines = this.statisticsSelected(a)
+      console.log('selectedLines', selectedLines)
+    },
+    handleTabKeyDown(e) {
+      const cursor = this.getCursorSelectedText()
+      const start = cursor.start
+      const end = cursor.end
+
+      let a = this.text
+      const selectedLineText = a.slice(start, end)
+      const selectedLines = this.statisticsSelected(selectedLineText)
 
       const b = ' '
       if (start === end) {
@@ -194,6 +222,9 @@ export default {
             }
           }
           this.text = a
+          this.$nextTick(() => {
+            this.setCursorLocation(start, selectedLines * 2 + end)
+          })
         } else {
           // single line
           this.text = [a.slice(0, start), b + b, a.slice(start)].join('')
@@ -247,6 +278,23 @@ export default {
     statistics(val) {
       this.lines = val.split(/\r\n|\r|\n/).length
       this.words = val.length
+    },
+    handlePreCancel() {
+      this.isCancel = true
+      if (this.curVersionIndex !== 0) {
+        this.curVersionIndex = this.curVersionIndex - 1
+        this.temp.pop()
+      }
+      this.text = this.temp[this.curVersionIndex]
+      console.log('handlePreCancel', this.temp)
+    },
+    record(val) {
+      if (!this.isCancel) {
+        this.temp.push(val)
+        this.curVersionIndex = this.temp.length - 1
+        console.log('record', this.temp)
+      }
+      this.isCancel = false
     },
     statisticsSelected(val) {
       return val.split(/\r\n|\r|\n/).length
