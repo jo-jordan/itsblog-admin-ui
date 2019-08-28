@@ -15,7 +15,14 @@
         </div>
       </div>
       <div id="editor">
-        <textarea ref="textEditArea" v-model="text" />
+        <textarea
+          ref="textEditArea"
+          v-model="text"
+          @keydown.tab.exact.prevent="handleTabKeyDown"
+          @keydown.shift.tab.exact.prevent="handleShiftTabKeyDown"
+          @keydown.meta.83.prevent="handleSave"
+          @keydown.ctrl.83.prevent="handleSave"
+        />
         <div id="content-preview" v-html="markedText" />
       </div>
       <div id="bottom-action-bar">
@@ -24,6 +31,12 @@
         </span>
         <span class="bottom-text">
           words: {{ words }}
+        </span>
+        <span class="bottom-text">
+          col: {{ col }}
+        </span>
+        <span class="bottom-text">
+          row: {{ row }}
         </span>
       </div>
     </div>
@@ -64,6 +77,8 @@ export default {
   },
   data() {
     return {
+      col: 0,
+      row: 0,
       form: {},
       id: 0,
       lastText: '',
@@ -118,12 +133,86 @@ export default {
     this.assignXAndY()
   },
   methods: {
+    handleTabKeyDown(e) {
+      const cursor = this.getCursorSelectedText()
+      const start = cursor.start
+      const end = cursor.end
+
+      let a = this.text
+      const selectedLines = this.statisticsSelected(a)
+
+      const b = ' '
+      if (start === end) {
+        // insert two space
+        this.text = [a.slice(0, end), b + b, a.slice(end)].join('')
+        this.$nextTick(() => {
+          this.setCursorLocation(start + 2, start + 2)
+        })
+      } else {
+        // multiple lines
+        if (selectedLines !== 0) {
+          // find the last wrap char in first line of the selected part
+          // from start to 0, the index of first wrap char is what we want
+          const beforeStartPosText = a.slice(0, start)
+          console.log('beforeStartPosText', beforeStartPosText)
+          for (let index = beforeStartPosText.length; index > -1; index--) {
+            if (index === 0) {
+              a = [b + b, a].join('')
+            }
+            const element = beforeStartPosText[index]
+            const last = beforeStartPosText[index - 1]
+            if (element === '\n') {
+              if (last && last === '\r') {
+                a = [a.slice(0, index + 1), b + b, a.slice(index + 1)].join('')
+                break
+              } else {
+                a = [a.slice(0, index + 1), b + b, a.slice(index + 1)].join('')
+                break
+              }
+            } else if (element === '\r') {
+              a = [a.slice(0, index + 1), b + b, a.slice(index + 1)].join('')
+              break
+            }
+          }
+          // find the wrap text location
+          for (let index = start; index < end; index++) {
+            const element = a[index]
+            // /\r\n|\r|\n/
+            if (element === '\n') {
+              a = [a.slice(0, index + 1), b + b, a.slice(index + 1)].join('')
+            } else if (element === '\r') {
+              const next = a[index + 1]
+              if (next) {
+                if (next === '\n') {
+                  continue
+                } else {
+                  a = [a.slice(0, index + 1), b + b, a.slice(index + 1)].join('')
+                }
+              }
+            } else {
+              continue
+            }
+          }
+          this.text = a
+        } else {
+          // single line
+          this.text = [a.slice(0, start), b + b, a.slice(start)].join('')
+          this.$nextTick(() => {
+            this.setCursorLocation(start + 2, end + 2)
+          })
+        }
+      }
+      console.log('handleTabKeyDown e', e)
+    },
     assignXAndY() {
-      console.log('this.x, this.y', this.x, this.y)
       const docStyle = document.documentElement.style
       docStyle.setProperty('--mouse-x', Number(this.x))
       docStyle.setProperty('--mouse-y', Number(this.y))
-      console.log('this.x, this.y', Number(docStyle.getPropertyValue('--mouse-x')), docStyle.getPropertyValue('--mouse-y'))
+    },
+    setCursorLocation(start, end) {
+      const textarea = this.$refs.textEditArea
+      textarea.selectionStart = start
+      textarea.selectionEnd = end
     },
     getCursorSelectedText() {
       const textarea = this.$refs.textEditArea
@@ -158,6 +247,9 @@ export default {
     statistics(val) {
       this.lines = val.split(/\r\n|\r|\n/).length
       this.words = val.length
+    },
+    statisticsSelected(val) {
+      return val.split(/\r\n|\r|\n/).length
     },
     handleSave() {
       if (typeof this.beforeClose === 'function') {
@@ -279,6 +371,7 @@ export default {
   position: fixed;
   top: 48px;
   bottom: 24px;
+  height: 100%;
   left: 0;
   width: 50%;
   vertical-align: top;
