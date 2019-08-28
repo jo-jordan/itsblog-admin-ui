@@ -56,7 +56,7 @@
       </el-table-column>
       <el-table-column align="center" fixed="right" label="Action" width="200">
         <template slot-scope="scope">
-          <el-button type="text" size="small" @click="handleBlogEditClick(scope.row)">Publish</el-button>
+          <el-button type="text" size="small" @click="handleBlogPublishClick(scope.row)">Publish</el-button>
           <el-button type="text" size="small" @click="handleBlogEditClick(scope.row)">Edit</el-button>
           <el-button type="text" size="small" @click="handleBlogDeleteClick(scope.row)">Delete</el-button>
         </template>
@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import { getList, createBlog, updateBlog, deleteBlog } from '@/api/blog'
+import { getList, createBlog, updateBlog, publishBlog, deleteBlog } from '@/api/blog'
 import Pagination from '@/components/Pagination'
 import ItsMarkdown from '@/components/ItsMarkdown'
 import { notify_success, notify_failure } from '@/utils/popup.js'
@@ -105,6 +105,13 @@ export default {
     this.fetchData()
   },
   methods: {
+    handleBlogPublishClick(row) {
+      row.blogSource = ''
+      row.blogHtml = ''
+      publishBlog(row).then(res => {
+        this.fetchData()
+      })
+    },
     handleSearch() {
       this.fetchData()
     },

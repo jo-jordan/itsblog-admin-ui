@@ -24,6 +24,14 @@ export function updateBlog(data) {
   })
 }
 
+export function publishBlog(data) {
+  return request({
+    url: '/blog/publish',
+    method: 'post',
+    data
+  })
+}
+
 export function deleteBlog(data) {
   return request({
     url: '/blog/delete',
