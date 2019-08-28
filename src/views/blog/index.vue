@@ -1,6 +1,10 @@
 <template>
   <div class="app-container" @mousemove="handleMouseMove">
     <div class="filter-container">
+      <el-input v-model="listQuery.keyword" class="filter-item" style="width: 200px;" placeholder="Title" />
+      <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleSearch">
+        Search
+      </el-button>
       <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
         Add
       </el-button>
@@ -101,6 +105,9 @@ export default {
     this.fetchData()
   },
   methods: {
+    handleSearch() {
+      this.fetchData()
+    },
     handleMouseMove(e) {
       this.curPosX = e.clientX
       this.curPosY = e.clientY
