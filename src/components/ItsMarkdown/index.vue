@@ -230,13 +230,12 @@ export default {
             next(res) {
               that.uploadInfo = 'Uploading file: ' + file.name + ' ...'
               that.progress = res.total.percent
-              console.log('next res', res.total.percent)
-              console.log('next res', that.progress)
             },
             error(err) {
               that.uploadInfo = 'Upload error: ' + err
             },
             complete() {
+              that.uploadInfo = ''
               that.progress = 0
               that.subscription = undefined
               that.uploadCount += 1
@@ -245,7 +244,6 @@ export default {
               if (this.progressTotal === 100) {
                 that.resetUploadData()
               }
-              console.log('complete', that.uploadCount, total)
             }
           }
 
