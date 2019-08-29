@@ -27,6 +27,16 @@
           {{ scope.row.title }}
         </template>
       </el-table-column>
+      <el-table-column width="150" label="Tags" align="center">
+        <template slot-scope="scope">
+          {{ scope.row.tags }}
+        </template>
+      </el-table-column>
+      <el-table-column width="120" label="Category" align="center">
+        <template slot-scope="scope">
+          {{ scope.row.category }}
+        </template>
+      </el-table-column>
       <el-table-column label="Lines" width="110" align="center">
         <template slot-scope="scope">
           {{ scope.row.lines }}

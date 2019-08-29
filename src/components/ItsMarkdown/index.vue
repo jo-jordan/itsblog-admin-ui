@@ -122,12 +122,7 @@ export default {
   },
   computed: {
     markedText: function() {
-      return marked(this.text, {
-        renderer: new marked.Renderer(),
-        highlight: function(code) {
-          return hljs.highlightAuto(code).value
-        }
-      })
+      return marked(this.text)
     }
   },
   watch: {
@@ -182,7 +177,6 @@ export default {
 
       let a = this.text
       const selectedLines = this.statisticsSelected(a)
-      console.log('selectedLines', selectedLines)
     },
     handleTabKeyDown(e) {
       const cursor = this.getCursorSelectedText()
@@ -226,6 +220,7 @@ export default {
               break
             }
           }
+
           // find the wrap text location
           for (let index = start; index < end; index++) {
             const element = a[index]
@@ -257,7 +252,6 @@ export default {
           })
         }
       }
-      console.log('handleTabKeyDown e', e)
     },
     assignXAndY() {
       const docStyle = document.documentElement.style
@@ -310,13 +304,11 @@ export default {
         this.temp.pop()
       }
       this.text = this.temp[this.curVersionIndex]
-      console.log('handlePreCancel', this.temp)
     },
     record(val) {
       if (!this.isCancel) {
         this.temp.push(val)
         this.curVersionIndex = this.temp.length - 1
-        console.log('record', this.temp)
       }
       this.isCancel = false
     },
