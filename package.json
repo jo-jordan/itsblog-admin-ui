@@ -26,6 +26,7 @@
     "path-to-regexp": "2.4.0",
     "pygmentize": "^0.5.3",
     "pygmentize-bundled": "^2.3.0",
+    "qiniu-js": "^2.5.4",
     "vue": "2.6.10",
     "vue-router": "3.0.6",
     "vuex": "3.1.0"

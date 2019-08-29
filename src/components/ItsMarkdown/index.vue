@@ -6,35 +6,55 @@
           <el-popover
             placement="bottom"
             width="400"
-            trigger="click">
+            trigger="click"
+          >
             <el-table :data="topRightTips">
-              <el-table-column property="name" align="left" width="100px" label="Name"></el-table-column>
-              <el-table-column property="key" align="center" min-width="60px" label="Key"></el-table-column>
+              <el-table-column property="name" align="left" width="100px" label="Name" />
+              <el-table-column property="key" align="center" min-width="60px" label="Key" />
             </el-table>
-            <span class="el-icon-s-opportunity top-right-box" slot="reference" />
+            <span slot="reference" class="el-icon-s-opportunity top-right-box" />
           </el-popover>
           <i v-if="lastText===text" class="el-icon-success top-right-box" />
           <i v-if="lastText!==text" class="el-icon-warning top-right-box" />
-          <el-input v-model="title" type="text" size="mini" show-word-limit class="top-right-box" placeholder="Enter a title" />
+          <el-input v-model="title" accept="image/*, .pdf" type="text" size="mini" show-word-limit class="top-right-box" placeholder="Enter a title" />
           <el-button size="mini" type="primary" round @click="handleSave">Save</el-button>
           <el-button size="mini" type="danger" round @click="handleClose">Quit</el-button>
         </div>
         <div id="top-left-action-bar">
           <el-button size="mini" type="text" round @click="hanldeSelectedTextBold">Bold</el-button>
           <el-button size="mini" type="text" round @click="hanldeSelectedTextItalic">Italic</el-button>
+          <el-popover
+            placement="bottom"
+            width="400"
+            trigger="click"
+            @hide="handleUploadPopoverHide"
+          >
+            <input id="file" ref="files" type="file" class="custom-file-input" multiple @change="previewFiles">
+            <label for="file" class="el-button el-button--primary el-button--mini is-round">点击上传</label>
+            <span class="upload-text">{{ selectedFilesInfo }}</span>
+            <el-button slot="reference" size="mini" type="text" round @click="hanldeSelectedTextItalic">Image</el-button>
+            <br>
+            <span v-if="uploadTotalInfo" class="upload-text">{{ uploadTotalInfo }}</span>
+            <el-progress :percentage="progressTotal" />
+            <br>
+            <span v-if="uploadInfo" class="upload-text">{{ uploadInfo }}</span>
+            <el-progress :percentage="progress" />
+          </el-popover>
         </div>
       </div>
       <div id="editor">
-        <textarea
-          ref="textEditArea"
-          v-model="text"
-          @keydown.tab.exact.prevent="handleTabKeyDown"
-          @keydown.shift.tab.exact.prevent="handleShiftTabKeyDown"
-          @keydown.meta.83.prevent="handleSave"
-          @keydown.ctrl.83.prevent="handleSave"
-          @keydown.meta.90.prevent="handlePreCancel"
-          @keydown.ctrl.90.prevent="handlePreCancel"
-        />
+        <div id="content-editor">
+          <textarea
+            ref="textEditArea"
+            v-model="text"
+            @keydown.tab.exact.prevent="handleTabKeyDown"
+            @keydown.shift.tab.exact.prevent="handleShiftTabKeyDown"
+            @keydown.meta.83.prevent="handleSave"
+            @keydown.ctrl.83.prevent="handleSave"
+            @keydown.meta.90.prevent="handlePreCancel"
+            @keydown.ctrl.90.prevent="handlePreCancel"
+          />
+        </div>
         <div id="content-preview" v-html="markedText" />
       </div>
       <div id="bottom-action-bar">
@@ -56,9 +76,10 @@
 </template>
 
 <script>
+import { getUploadToken } from '@/api/qiniu'
 import marked from 'marked'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
+import * as qiniu from 'qiniu-js'
+import { pop_error } from '@/utils/popup.js'
 
 export default {
   name: 'ItsMarkdown',
@@ -89,6 +110,7 @@ export default {
   },
   data() {
     return {
+      imgDomain: 'http://pwzmbx1xi.bkt.clouddn.com/',
       isCancel: false,
       col: 0,
       row: 0,
@@ -104,6 +126,13 @@ export default {
       y: 0,
       temp: [], // for step cancel
       curVersionIndex: 0,
+      selectedFilesInfo: 'None',
+      uploadInfo: '',
+      progress: 0,
+      progressTotal: 0,
+      uploadCount: 0,
+      uploadTotalInfo: '0/0',
+      subscription: undefined,
       topRightTips: [
         {
           name: 'Save',
@@ -160,6 +189,91 @@ export default {
     this.assignXAndY()
   },
   methods: {
+    handleUploadPopoverHide() {
+      if (this.subscription) {
+        this.subscription.unsubscribe()
+        pop_error('Upload canceled')
+      }
+      this.resetUploadData()
+    },
+    resetUploadData() {
+      this.progress = 0
+      this.subscription = undefined
+      this.uploadInfo = ''
+      this.selectedFilesInfo = 'None'
+      this.progressTotal = 0
+      this.uploadTotalInfo = '0/0'
+      this.uploadCount = 0
+    },
+    previewFiles(event) {
+      const files = event.target.files
+      const total = files.length
+      if (total > 1) {
+        this.selectedFilesInfo = total + ' files has been selected'
+        for (let i = 0; i < total; i++) {
+          const file = files[i]
+          this.upload(file, total)
+        }
+      } else {
+        const file = files[0]
+        this.selectedFilesInfo = file.name + ' has been selected.'
+        this.upload(file, 1)
+      }
+      this.$refs.files.value = ''
+    },
+    upload(file, total) {
+      getUploadToken({ fileKey: file.name }).then(response => {
+        const that = this
+        if (response.code === 1) {
+          const token = response.data
+          var observer = {
+            next(res) {
+              that.uploadInfo = 'Uploading file: ' + file.name + ' ...'
+              that.progress = res.total.percent
+              console.log('next res', res.total.percent)
+              console.log('next res', that.progress)
+            },
+            error(err) {
+              that.uploadInfo = 'Upload error: ' + err
+            },
+            complete() {
+              that.progress = 0
+              that.subscription = undefined
+              that.uploadCount += 1
+              that.progressTotal = 100 * that.uploadCount / total
+              that.uploadTotalInfo = that.uploadCount + '/' + total
+              if (this.progressTotal === 100) {
+                that.resetUploadData()
+              }
+              console.log('complete', that.uploadCount, total)
+            }
+          }
+
+          var config = {
+            useCdnDomain: true,
+            region: qiniu.region.z2
+          }
+          var putExtra = {
+            fname: file.name,
+            params: {},
+            mimeType: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf', 'image/svg+xml', 'image/x-icon']
+          }
+          const observable = qiniu.upload(file, file.name, token, putExtra, config)
+          that.subscription = observable.subscribe(observer) // 上传开始
+          that.insertImg(that.imgDomain + file.name)
+        } else {
+          pop_error(response.msg)
+        }
+      })
+    },
+    insertImg(url) {
+      const cursor = this.getCursorSelectedText()
+      const start = cursor.start
+      const a = this.text
+
+      const urlText = '![Untitled](' + url + ')\r\n'
+      this.text = [a.slice(0, start), urlText, a.slice(start)].join('')
+    },
     resetEditor() {
       this.temp = []
       this.curVersionIndex = 0
@@ -171,12 +285,13 @@ export default {
       this.id = 0
     },
     handleShiftTabKeyDown(e) {
-      const cursor = this.getCursorSelectedText()
-      const start = cursor.start
-      const end = cursor.end
+      // const cursor = this.getCursorSelectedText()
+      // const start = cursor.start
+      // const end = cursor.end
 
-      let a = this.text
-      const selectedLines = this.statisticsSelected(a)
+      // const a = this.text
+      // const selectedLines = this.statisticsSelected(a)
+      // console.log(selectedLines)
     },
     handleTabKeyDown(e) {
       const cursor = this.getCursorSelectedText()
@@ -415,9 +530,7 @@ export default {
   justify-content: left;
   align-items: center;
 }
-#content-preview{
-  background-color: rgb(223, 223, 223);
-}
+
 #editor {
   position: absolute;
   left: 0;
@@ -429,34 +542,36 @@ export default {
   height: 100%;
   font-family: 'Helvetica Neue', Arial, sans-serif;
   color: #333;
+  #content-preview{
+    background-color: rgb(223, 223, 223);
+    position: fixed;
+    top: 48px;
+    bottom: 24px;
+    right: 0;
+    display: inline-block;
+    width: 50%;
+    vertical-align: top;
+    box-sizing: border-box;
+    padding: 0 20px;
+    overflow: auto;
+  }
+  #content-editor {
+    display: inline-block;
+    position: fixed;
+    top: 48px;
+    bottom: 24px;
+    left: 0;
+    width: 50%;
+    vertical-align: top;
+    box-sizing: border-box;
+  }
 }
-#editor textarea {
-  display: inline-block;
-  position: fixed;
-  top: 48px;
-  bottom: 24px;
-  height: 100%;
-  left: 0;
-  width: 50%;
-  vertical-align: top;
-  box-sizing: border-box;
-  padding: 0 20px;
-}
-#editor div {
-  position: fixed;
-  top: 48px;
-  bottom: 24px;
-  right: 0;
-  display: inline-block;
-  width: 50%;
-  vertical-align: top;
-  box-sizing: border-box;
-  padding: 0 20px;
-  overflow: auto;
-}
+
 textarea {
   border: none;
   border-right: 1px solid #ccc;
+  height: 100%;
+  width: 100%;
   resize: none;
   outline: none;
   background-color: #ffffff;
@@ -485,5 +600,22 @@ textarea {
 }
 .top-right-tips{
   background-color: #333
+}
+.custom-file-input {
+  width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+.custom-file-input + label {
+  font-size: .75em;
+  font-weight: 700;
+  color: white;
+  display: inline-block;
+}
+.upload-text{
+  font-size: .75em;
 }
 </style>
