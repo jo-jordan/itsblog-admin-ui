@@ -110,7 +110,7 @@ export default {
   },
   data() {
     return {
-      imgDomain: 'http://pwzmbx1xi.bkt.clouddn.com/',
+      imgDomain: 'http://static.itsblog.cn/',
       isCancel: false,
       col: 0,
       row: 0,
