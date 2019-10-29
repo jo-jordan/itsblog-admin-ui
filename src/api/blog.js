@@ -8,6 +8,14 @@ export function getList(params) {
   })
 }
 
+export function findById(params) {
+  return request({
+    url: '/blog/find-by-id',
+    method: 'get',
+    params
+  })
+}
+
 export function createBlog(data) {
   return request({
     url: '/blog/insert',

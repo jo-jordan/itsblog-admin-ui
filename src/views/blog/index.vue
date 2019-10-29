@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import { getList, createBlog, updateBlog, publishBlog, deleteBlog } from '@/api/blog'
+import { getList, createBlog, updateBlog, publishBlog, deleteBlog, findById } from '@/api/blog'
 import Pagination from '@/components/Pagination'
 import ItsMarkdown from '@/components/ItsMarkdown'
 import { notify_success, notify_failure } from '@/utils/popup.js'
@@ -161,21 +161,23 @@ export default {
       }
     },
     handleBlogDeleteClick(row) {
-      row.blogSource = ''
-      row.blogHtml = ''
       deleteBlog(row).then(res => {
         this.fetchData()
       })
     },
     handleBlogEditClick(row) {
-      this.content = {
-        id: row.id,
-        title: row.title,
-        text: decodeURIComponent(escape(window.atob(row.blogSource))),
-        x: this.curPosX,
-        y: this.curPosY
-      }
-      this.editorVisible = true
+      findById({ id: row.blogSourceId }).then(res => {
+        if (res.code === 1) {
+          this.content = {
+            id: row.id,
+            title: row.title,
+            text: decodeURIComponent(escape(window.atob(res.data.blogSource))),
+            x: this.curPosX,
+            y: this.curPosY
+          }
+        }
+        this.editorVisible = true
+      })
     },
     fetchData() {
       this.listLoading = true
