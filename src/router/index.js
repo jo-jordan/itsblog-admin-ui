@@ -69,6 +69,19 @@ export const constantRoutes = [
   },
 
   {
+    path: '/resume',
+    component: Layout,
+    children: [
+      {
+        path: 'resume',
+        name: 'Resume',
+        component: () => import('@/views/resume/index'),
+        meta: { title: 'Resume', icon: 'resume' }
+      }
+    ]
+  },
+
+  {
     path: '/statistics',
     component: Layout,
     children: [

@@ -24,6 +24,22 @@ export function createBlog(data) {
   })
 }
 
+export function updateBlogInfo(data) {
+  return request({
+    url: '/blog//info-update',
+    method: 'post',
+    data
+  })
+}
+
+export function archiveBlog(data) {
+  return request({
+    url: '/blog//archive',
+    method: 'post',
+    data
+  })
+}
+
 export function updateBlog(data) {
   return request({
     url: '/blog/update',
@@ -43,6 +59,14 @@ export function publishBlog(data) {
 export function deleteBlog(data) {
   return request({
     url: '/blog/delete',
+    method: 'post',
+    data
+  })
+}
+
+export function destroyBlog(data) {
+  return request({
+    url: '/blog/destroy',
     method: 'post',
     data
   })
