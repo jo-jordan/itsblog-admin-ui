@@ -110,7 +110,7 @@ export default {
   },
   data() {
     return {
-      imgDomain: 'http://static.itsblog.cn/',
+      imgDomain: 'https://static.itsblog.cn/',
       isCancel: false,
       col: 0,
       row: 0,
@@ -442,6 +442,9 @@ export default {
       } else {
         this.hide()
       }
+    },
+    updateId(id) {
+      this.id = id
     },
     handleClose() {
       if (this.lastText !== this.text) {
