@@ -14,7 +14,7 @@
             </el-table>
             <span slot="reference" class="el-icon-s-opportunity top-right-box" />
           </el-popover>
-          <i v-if="lastText===text" class="el-icon-success top-right-box" />
+          <i v-if="lastText===text" class="el-icon-success top-right-box" style="color:#67C23A"/>
           <i v-if="lastText!==text" class="el-icon-warning top-right-box" />
           <el-input v-model="title" accept="image/*, .pdf" type="text" size="mini" show-word-limit class="top-right-box" placeholder="Enter a title" />
           <el-button size="mini" type="primary" round @click="handleSave">Save</el-button>
@@ -23,6 +23,20 @@
         <div id="top-left-action-bar">
           <el-button size="mini" type="text" round @click="hanldeSelectedTextBold">Bold</el-button>
           <el-button size="mini" type="text" round @click="hanldeSelectedTextItalic">Italic</el-button>
+          
+          <el-popover placement="bottom">
+            <el-color-picker
+              v-model="textColor"
+              size="medium"
+              show-alpha
+              color-format="rgb"
+              @change="handleColorChange"
+              :predefine="predefineColors">
+            </el-color-picker>
+            <span>{{ textColor }}</span>
+            <el-button slot="reference" size="mini" type="text" round @click="hanldeSelectedTextColor">Color</el-button>
+          </el-popover>
+          
           <el-popover
             placement="bottom"
             width="400"
@@ -71,6 +85,7 @@
           row: {{ row }}
         </span>
       </div>
+      
     </div>
   </transition>
 </template>
@@ -110,6 +125,23 @@ export default {
   },
   data() {
     return {
+      predefineColors: [
+        '#ff4500',
+        '#ff8c00',
+        '#ffd700',
+        '#90ee90',
+        '#00ced1',
+        '#1e90ff',
+        '#c71585',
+        'rgba(255, 69, 0, 0.68)',
+        'rgb(255, 120, 0)',
+        'hsv(51, 100, 98)',
+        'hsva(120, 40, 94, 0.5)',
+        'hsl(181, 100%, 37%)',
+        'hsla(209, 100%, 56%, 0.73)',
+        '#c7158577'
+      ],
+      textColor: '#000000',
       imgDomain: 'https://static.itsblog.cn/',
       isCancel: false,
       col: 0,
@@ -406,6 +438,19 @@ export default {
       a = [a.slice(0, start), b, a.slice(start)].join('')
       this.text = a
     },
+    handleColorChange(val) {
+      this.textColor = val
+      const start = this.getCursorSelectedText().start
+      const end = this.getCursorSelectedText().end
+      if (start === end) return
+      let a = this.text
+      const head = ['<span style="color: ', val, '">'].join('')
+      const tail = '</span>'
+      a = [a.slice(0, end), tail, a.slice(end)].join('')
+      a = [a.slice(0, start), head, a.slice(start)].join('')
+      this.text = a
+    },
+    hanldeSelectedTextColor() {},
     statistics(val) {
       this.lines = val.split(/\r\n|\r|\n/).length
       this.words = val.length
